@@ -5,7 +5,7 @@ package bookstore;
 
 public class App {
     public String getGreeting() {
-        return "Hello omar!";
+        return "Hello Hussien!";
     }
 
     public static void main(String[] args) {
