@@ -38,3 +38,6 @@ app/bin
 
 ### Mac OS ###
 .DS_Store
+
+### Project Specific ###
+store.dat
