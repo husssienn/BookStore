@@ -10,11 +10,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.StringTokenizer;
 
-// TODO: add the following functions
-//  Book searchBookByCategory(String)
-//  ArrayList<Book> searchAllBooksByCategory(String)
-
-
 public class Store {
     // books indexed by their titles
     private final ArrayList<Book> books = new ArrayList<>();
@@ -119,7 +114,15 @@ public class Store {
         return bookArrayList;
     }
 
+    public Book searchAllBooksByCategory(String category) {
+        // TODO: implement
+        throw new UnsupportedOperationException();
+    }
 
+    public boolean updateBook(Book oldBook, Book newBook) {
+        // TODO: implement
+        throw new UnsupportedOperationException();
+    }
     /**
      * Deletes a book that have the same title & ISBN
      *
