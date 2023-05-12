@@ -17,7 +17,7 @@ import java.util.StringTokenizer;
 
 public class Store {
     // books indexed by their titles
-    public final ArrayList<Book> books = new ArrayList<>();
+    private final ArrayList<Book> books = new ArrayList<>();
     private final String filePath;
 
     /**
