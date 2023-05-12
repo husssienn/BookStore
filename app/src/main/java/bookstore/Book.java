@@ -39,11 +39,11 @@ public class Book {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Book book = (Book) o;
-        return Objects.equals(isbn, book.isbn) && Objects.equals(title, book.title) && Objects.equals(category, book.category);
+        return hashCode() == book.hashCode();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isbn, title, category);
+        return Objects.hash(isbn, title);
     }
 }
