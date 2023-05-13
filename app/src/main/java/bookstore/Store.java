@@ -1,6 +1,5 @@
 package bookstore;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,6 +23,7 @@ public class Store {
 
     /**
      * Construct a store with the file path specified to store data
+     *
      * @param filePath The path to store the store data
      */
     public Store(String filePath) {
@@ -68,6 +68,17 @@ public class Store {
     /**
      * Adds a book with the provided information
      *
+     * @param isbn  The ISBN of the book
+     * @param title The title of the book
+     * @return true if the book didn't exist before and was added, false otherwise
+     */
+    public boolean addBook(String isbn, String title) {
+        return addBook(new Book(isbn, title));
+    }
+
+    /**
+     * Adds a book with the provided information
+     *
      * @param isbn     The ISBN of the book
      * @param title    The title of the book
      * @param category The category of the book
@@ -80,12 +91,14 @@ public class Store {
     /**
      * Adds a book with the provided information
      *
-     * @param isbn  The ISBN of the book
+     * @param isbn The ISBN of the book
      * @param title The title of the book
+     * @param category The category of the book
+     * @param price The price of the book
      * @return true if the book didn't exist before and was added, false otherwise
      */
-    public boolean addBook(String isbn, String title) {
-        return addBook(new Book(isbn, title));
+    public boolean addBook(String isbn, String title, String category, float price) {
+        return addBook(new Book(isbn, title, category, price));
     }
 
     /**
@@ -123,6 +136,7 @@ public class Store {
         // TODO: implement
         throw new UnsupportedOperationException();
     }
+
     /**
      * Deletes a book that have the same title & ISBN
      *
@@ -275,42 +289,70 @@ public class Store {
                 System.err.println("Failed to create file to save store content");
             }
         } else {
-            var file = new File(filePath);
-
-            try (var fileInputStream = new FileInputStream(file)) {
+            try (var fileInputStream = new FileInputStream(filePath)) {
                 var tokenizer = new StringTokenizer(new String(fileInputStream.readAllBytes()), "{}[]', ");
 
                 if (!tokenizer.hasMoreTokens()) {
                     return;
                 } else if (!Objects.equals(tokenizer.nextToken(), "Store")) {
-                    System.err.println("Malformed store data, not reading");
+                    System.err.println("Malformed store data: Object is not store, not reading");
                     return;
                 } else {
                     tokenizer.nextToken();  // skip the name of the array field to start reading books in the next loop
                 }
 
-                while (tokenizer.hasMoreTokens()) {
-                    if (!Objects.equals(tokenizer.nextToken(), "Book")) {
-                        System.err.println("Malformed store data, not reading further");
-                        return;
-                    }
-                    if (!Objects.equals(tokenizer.nextToken(), "isbn=")) {
-                        System.err.println("Malformed store data, not reading further");
-                        return;
-                    }
-                    var isbn = tokenizer.nextToken();
-                    if (!Objects.equals(tokenizer.nextToken(), "title=")) {
-                        System.err.println("Malformed store data, not reading further");
-                        return;
-                    }
-                    var title = tokenizer.nextToken();
-                    if (!Objects.equals(tokenizer.nextToken(), "category=")) {
-                        System.err.println("Malformed store data, not reading further");
-                        return;
-                    }
-                    var category = tokenizer.nextToken();
-                    books.add(new Book(isbn, title, category));
+                if (!tokenizer.hasMoreTokens() || !Objects.equals(tokenizer.nextToken(), "Book")) {
+//                    System.err.println("Array doesn't contain books, not reading further");
+                    return;
                 }
+
+                var bookDeclaredFields = Book.class.getFields();
+                String isbn = null, title = null, category = null;
+                int price = 0;
+
+                while (tokenizer.hasMoreTokens()) {
+                    for (var declaredField : bookDeclaredFields) {
+                        var fieldName = declaredField.toString();
+                        var lastDotIdx = fieldName.lastIndexOf('.');
+                        fieldName = fieldName.substring(lastDotIdx);
+
+                        switch (fieldName) {
+                            case "isbn" -> {
+                                if (!Objects.equals(tokenizer.nextToken(), "isbn=")) {
+                                    System.err.println("Malformed store data: Book doesn't have ISBN, not reading further");
+                                    return;
+                                }
+                                isbn = tokenizer.nextToken();
+                            }
+                            case "title" -> {
+                                if (!Objects.equals(tokenizer.nextToken(), "title=")) {
+                                    System.err.println("Malformed store data: Book doesn't have title, not reading further");
+                                    return;
+                                }
+                                title = tokenizer.nextToken();
+                            }
+                            case "category" -> {
+                                if (!Objects.equals(tokenizer.nextToken(), "category=")) {
+                                    System.err.println("Malformed store data: Book doesn't have category, not reading further");
+                                    return;
+                                }
+                                category = tokenizer.nextToken();
+                            }
+                            case "price" -> {
+                                if (!Objects.equals(tokenizer.nextToken(), "price=")) {
+                                    System.err.println("Malformed store data: Book doesn't have cost, not reading further");
+                                    return;
+                                }
+                                price = Integer.parseInt(tokenizer.nextToken());
+                            }
+                            default -> {
+                                System.err.println("Malformed store data: Non-parsable book field (" + fieldName + "), not reading further");
+                                return;
+                            }
+                        }
+                    }
+                }
+                addBook(isbn, title, category, price);
             } catch (IOException e) {
                 System.err.println("Failed to open store file to read data");
             }
