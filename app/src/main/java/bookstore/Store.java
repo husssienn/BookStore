@@ -54,14 +54,7 @@ public class Store {
             if (books.get(firstBiggerIdx).getTitle().compareTo(book.getTitle()) > 0) break;
         }
 
-        if (firstBiggerIdx == 0) {
-            books.add(0, book);
-        } else if (firstBiggerIdx == books.size()) {
-            books.add(firstBiggerIdx, book);
-        } else {
-            books.add(firstBiggerIdx - 1, book);
-        }
-
+        books.add(firstBiggerIdx, book);
         return true;
     }
 
@@ -91,10 +84,10 @@ public class Store {
     /**
      * Adds a book with the provided information
      *
-     * @param isbn The ISBN of the book
-     * @param title The title of the book
+     * @param isbn     The ISBN of the book
+     * @param title    The title of the book
      * @param category The category of the book
-     * @param price The price of the book
+     * @param price    The price of the book
      * @return true if the book didn't exist before and was added, false otherwise
      */
     public boolean addBook(String isbn, String title, String category, float price) {
@@ -127,11 +120,27 @@ public class Store {
         return bookArrayList;
     }
 
-    public Book searchAllBooksByCategory(String category) {
+    /**
+     * Returns all books matching the provided category
+     *
+     * @param category The category to search for
+     * @return ArrayList of books matching the provided category or null if non found
+     */
+    public ArrayList<Book> searchAllBooksByCategory(String category) {
         // TODO: implement
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Updates a book category or price
+     *
+     * @param oldBook The old book to update
+     * @param newBook The new book to use
+     * @return true if the old book was found and updated, false otherwise
+     * @apiNote Only price & category can be updated, ISBN & title can't be changed.
+     * Although a book can be deleted and re-added with different title or ISBN
+     * @implNote The only required fields of the old book are the ISBN & title since equality only checks for them
+     */
     public boolean updateBook(Book oldBook, Book newBook) {
         // TODO: implement
         throw new UnsupportedOperationException();
@@ -174,43 +183,20 @@ public class Store {
         return res;
     }
 
-//    /**
-//     * Delete a book that only matches the title
-//     *
-//     * @param title The title to search for
-//     * @return true if the book was found and deleted, false otherwise
-//     */
-//    public boolean deleteBookByTitle(String title) {
-//        var bookIdx = searchBookIdxByTitle(title);
-//        if (bookIdx != -1) {
-//            books.remove(bookIdx);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * Delete all books having the provided title
-//     * @param title The title of the books to delete
-//     * @return true if any book matched and was deleted, false otherwise
-//     */
-//    public boolean deleteAllBooksByTitle(String title) {
-//        var res = false;
-//        var bookIndices = searchAllBookIndicesByTitle(title);
-//        if (bookIndices == null) return false;
-//        // delete from the end of the list
-//        Collections.reverse(bookIndices);
-//        for (int idx : bookIndices) {
-//            res = true;
-//            books.remove(idx);
-//        }
-//        return res;
-//    }
-
+    /**
+     * Returns a copy of the internal books array
+     *
+     * @return ArrayList copy of the books
+     */
     public ArrayList<Book> getAllBooks() {
         return new ArrayList<>(books);
     }
 
+    /**
+     * Returns a string representation of the store object
+     *
+     * @return String representing the store object
+     */
     @Override
     public String toString() {
         return "Store{" + "books=" + books + '}';
@@ -223,9 +209,8 @@ public class Store {
      * @return The index of that book in the list
      */
     private int searchBookIdxByTitle(String title) {
-        if (books.size() == 0) return -1;
         // binary search
-        for (int start = 0, end = books.size() - 1; start < end; ) {
+        for (int start = 0, end = books.size() - 1; start <= end; ) {
             var middle = (start + end) / 2;
             var res = books.get(middle).getTitle().compareTo(title);
             if (res == 0) {
@@ -247,7 +232,6 @@ public class Store {
      * @implNote The list returned is sorted in ascending order
      */
     private ArrayList<Integer> searchAllBookIndicesByTitle(String title) {
-        if (books.size() == 0) return null;
         var indices = new ArrayList<Integer>();
         // binary search
         for (int start = 0, end = books.size() - 1; start <= end; ) {
@@ -272,6 +256,9 @@ public class Store {
         return null;
     }
 
+    /**
+     * Reads the store object data from a file using simple serialization
+     */
     private void loadStoreData() {
         var path = Paths.get(filePath);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -290,7 +277,7 @@ public class Store {
             }
         } else {
             try (var fileInputStream = new FileInputStream(filePath)) {
-                var tokenizer = new StringTokenizer(new String(fileInputStream.readAllBytes()), "{}[]', ");
+                var tokenizer = new StringTokenizer(new String(fileInputStream.readAllBytes()), "{}[]', =");
 
                 if (!tokenizer.hasMoreTokens()) {
                     return;
@@ -301,45 +288,45 @@ public class Store {
                     tokenizer.nextToken();  // skip the name of the array field to start reading books in the next loop
                 }
 
-                if (!tokenizer.hasMoreTokens() || !Objects.equals(tokenizer.nextToken(), "Book")) {
-//                    System.err.println("Array doesn't contain books, not reading further");
-                    return;
-                }
-
-                var bookDeclaredFields = Book.class.getFields();
+                var bookDeclaredFields = Book.class.getDeclaredFields();
                 String isbn = null, title = null, category = null;
                 var price = 0.0f;
 
                 while (tokenizer.hasMoreTokens()) {
+                    if (!Objects.equals(tokenizer.nextToken(), "Book")) {
+                        System.err.println("Malformed store data: Expected book object not found, not reading further");
+                        return;
+                    }
+
                     for (var declaredField : bookDeclaredFields) {
                         var fieldName = declaredField.toString();
                         var lastDotIdx = fieldName.lastIndexOf('.');
-                        fieldName = fieldName.substring(lastDotIdx);
+                        fieldName = fieldName.substring(lastDotIdx + 1);
 
                         switch (fieldName) {
                             case "isbn" -> {
-                                if (!Objects.equals(tokenizer.nextToken(), "isbn=")) {
+                                if (!Objects.equals(tokenizer.nextToken(), "isbn")) {
                                     System.err.println("Malformed store data: Book doesn't have ISBN, not reading further");
                                     return;
                                 }
                                 isbn = tokenizer.nextToken();
                             }
                             case "title" -> {
-                                if (!Objects.equals(tokenizer.nextToken(), "title=")) {
+                                if (!Objects.equals(tokenizer.nextToken(), "title")) {
                                     System.err.println("Malformed store data: Book doesn't have title, not reading further");
                                     return;
                                 }
                                 title = tokenizer.nextToken();
                             }
                             case "category" -> {
-                                if (!Objects.equals(tokenizer.nextToken(), "category=")) {
+                                if (!Objects.equals(tokenizer.nextToken(), "category")) {
                                     System.err.println("Malformed store data: Book doesn't have category, not reading further");
                                     return;
                                 }
                                 category = tokenizer.nextToken();
                             }
                             case "price" -> {
-                                if (!Objects.equals(tokenizer.nextToken(), "price=")) {
+                                if (!Objects.equals(tokenizer.nextToken(), "price")) {
                                     System.err.println("Malformed store data: Book doesn't have price, not reading further");
                                     return;
                                 }
@@ -351,8 +338,8 @@ public class Store {
                             }
                         }
                     }
+                    addBook(isbn, title, category, price);
                 }
-                addBook(isbn, title, category, price);
             } catch (IOException e) {
                 System.err.println("Failed to open store file to read data");
             }
