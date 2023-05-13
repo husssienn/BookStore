@@ -308,7 +308,7 @@ public class Store {
 
                 var bookDeclaredFields = Book.class.getFields();
                 String isbn = null, title = null, category = null;
-                int price = 0;
+                var price = 0.0f;
 
                 while (tokenizer.hasMoreTokens()) {
                     for (var declaredField : bookDeclaredFields) {
@@ -340,10 +340,10 @@ public class Store {
                             }
                             case "price" -> {
                                 if (!Objects.equals(tokenizer.nextToken(), "price=")) {
-                                    System.err.println("Malformed store data: Book doesn't have cost, not reading further");
+                                    System.err.println("Malformed store data: Book doesn't have price, not reading further");
                                     return;
                                 }
-                                price = Integer.parseInt(tokenizer.nextToken());
+                                price = Float.parseFloat(tokenizer.nextToken());
                             }
                             default -> {
                                 System.err.println("Malformed store data: Non-parsable book field (" + fieldName + "), not reading further");
